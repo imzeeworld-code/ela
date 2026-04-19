@@ -9,7 +9,7 @@ import {
   SendMessageParams,
   SendMessageBody,
 } from "@workspace/api-zod";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { rotateChatCompletion, type ChatMessage } from "../lib/ai-rotation";
 
 const router: IRouter = Router();
 
@@ -196,7 +196,7 @@ router.post("/conversations/:id/messages", async (req, res): Promise<void> => {
     .where(eq(messages.conversationId, params.data.id))
     .orderBy(messages.createdAt);
 
-  const chatMessages: { role: "system" | "user" | "assistant"; content: string }[] = [
+  const chatMessages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
     ...history
       .filter((m) => m.id !== userMessage.id)
@@ -207,13 +207,9 @@ router.post("/conversations/:id/messages", async (req, res): Promise<void> => {
     { role: "user", content: body.data.content },
   ];
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-5.2",
-    max_completion_tokens: 8192,
-    messages: chatMessages,
+  const aiContent = await rotateChatCompletion(chatMessages).catch(() => {
+    return "I am taking a moment to gather my thoughts. Please allow me a brief pause before we continue.";
   });
-
-  const aiContent = completion.choices[0]?.message?.content ?? "I am processing your request. Please allow me a moment.";
 
   const [assistantMessage] = await db
     .insert(messages)
