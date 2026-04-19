@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Wise AI"
+version = "1.0.0"
+id = "artifacts/wise-ai"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25896
+
+[services.development]
+run = "pnpm --filter @workspace/wise-ai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/wise-ai", "run", "build" ]
+publicDir = "artifacts/wise-ai/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25896"
+BASE_PATH = "/"
